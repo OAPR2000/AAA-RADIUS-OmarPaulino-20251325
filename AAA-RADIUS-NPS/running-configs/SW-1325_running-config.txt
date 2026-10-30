@@ -1,0 +1,243 @@
+SW-1325#show running-config
+Building configuration...
+
+Current configuration : 6623 bytes
+!
+! Last configuration change at 20:56:06 AST Thu Oct 29 2026
+!
+version 15.2
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+service compress-config
+!
+hostname SW-1325
+!
+boot-start-marker
+boot-end-marker
+!
+!
+logging userinfo
+logging buffered 64000 informational
+enable secret 5 $1$7D1P$xHuoeTbchEOs/t.Cp51eG0
+!
+username admin1325 privilege 15 secret 5 $1$pB13$b48fiY1h64sTSAe/s.p.O.
+aaa new-model
+!
+!
+aaa group server radius GRUPO-NPS
+ server name NPS-1325
+ ip radius source-interface Vlan13
+!
+aaa authentication login default local
+aaa authentication login CONSOLA-AUX group GRUPO-NPS local
+aaa authentication login VTY-SSH group GRUPO-NPS local
+aaa authentication enable default enable
+aaa authorization console
+aaa authorization exec default local
+aaa authorization exec CONSOLA-AUX group GRUPO-NPS local
+aaa authorization exec VTY-SSH group GRUPO-NPS local
+aaa accounting exec default start-stop group GRUPO-NPS
+!
+!
+!
+!
+!
+!
+aaa session-id common
+clock timezone AST -4 0
+!
+!
+!
+!
+!
+!
+!
+!
+no ip domain-lookup
+ip domain-name omar1325.local
+ip cef
+login block-for 120 attempts 3 within 60
+login delay 2
+login on-failure log
+login on-success log
+no ipv6 cef
+!
+!
+archive
+ log config
+  logging enable
+  logging size 200
+  notify syslog contenttype plaintext
+  hidekeys
+!
+spanning-tree mode rapid-pvst
+spanning-tree extend system-id
+!
+no cdp run
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface GigabitEthernet0/0
+ description ENLACE-R1-1325-Gi0/0
+ switchport access vlan 13
+ switchport mode access
+ switchport nonegotiate
+ negotiation auto
+ spanning-tree portfast edge
+!
+interface GigabitEthernet0/1
+ description SERVIDOR-NPS-OMAR1325
+ switchport access vlan 13
+ switchport mode access
+ switchport nonegotiate
+ switchport port-security mac-address sticky
+ switchport port-security mac-address sticky 000c.2915.9caa
+ switchport port-security
+ negotiation auto
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+!
+interface GigabitEthernet0/2
+ description SIN-USO
+ switchport access vlan 999
+ switchport mode access
+ shutdown
+ negotiation auto
+!
+interface GigabitEthernet0/3
+ description SIN-USO
+ switchport access vlan 999
+ switchport mode access
+ shutdown
+ negotiation auto
+!
+interface GigabitEthernet1/0
+ description SIN-USO
+ switchport access vlan 999
+ switchport mode access
+ shutdown
+ negotiation auto
+!
+interface GigabitEthernet1/1
+ description SIN-USO
+ switchport access vlan 999
+ switchport mode access
+ shutdown
+ negotiation auto
+!
+interface GigabitEthernet1/2
+ description SIN-USO
+ switchport access vlan 999
+ switchport mode access
+ shutdown
+ negotiation auto
+!
+interface GigabitEthernet1/3
+ description SIN-USO
+ switchport access vlan 999
+ switchport mode access
+ shutdown
+ negotiation auto
+!
+interface Vlan1
+ no ip address
+ shutdown
+!
+interface Vlan13
+ description GESTION-SW-1325
+ ip address 10.13.25.2 255.255.255.0
+!
+ip default-gateway 10.13.25.1
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+!
+ip ssh time-out 60
+ip ssh logging events
+ip ssh version 2
+ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+!
+ip access-list standard SSH-GESTION
+ permit 10.13.25.0 0.0.0.255
+ deny   any log
+!
+!
+ip radius source-interface Vlan13
+!
+!
+!
+!
+radius-server retransmit 1
+radius-server timeout 3
+!
+radius server NPS-1325
+ address ipv4 10.13.25.10 auth-port 1812 acct-port 1813
+ key 7 0234055F02131C621D1D5B4C
+!
+!
+control-plane
+!
+privilege interface level 10 shutdown
+privilege interface level 10 description
+privilege configure level 10 interface
+privilege exec level 5 traceroute
+privilege exec level 5 ping
+privilege exec level 10 configure terminal
+privilege exec level 10 configure
+privilege exec level 5 show ip interface brief
+privilege exec level 5 show ip interface
+privilege exec level 5 show ip
+privilege exec level 5 show users
+privilege exec level 5 show version
+privilege exec level 5 show running-config
+privilege exec level 5 show logging
+privilege exec level 0 show privilege
+privilege exec level 5 show interfaces
+privilege exec level 5 show
+banner motd ^C
+*** ACCESO RESTRINGIDO - SW-1325 - Solo personal autorizado ***
+*** Practica AAA - Omar Paulino 20251325 ***
+^C
+!
+line con 0
+ exec-timeout 5 0
+ authorization exec CONSOLA-AUX
+ logging synchronous
+ login authentication CONSOLA-AUX
+line aux 0
+ exec-timeout 5 0
+ authorization exec CONSOLA-AUX
+ login authentication CONSOLA-AUX
+line vty 0 4
+ access-class SSH-GESTION in
+ exec-timeout 5 0
+ authorization exec VTY-SSH
+ logging synchronous
+ login authentication VTY-SSH
+ transport input ssh
+ transport output none
+line vty 5 15
+ access-class SSH-GESTION in
+ exec-timeout 5 0
+ authorization exec VTY-SSH
+ logging synchronous
+ login authentication VTY-SSH
+ transport input ssh
+ transport output none
+!
+!
+end

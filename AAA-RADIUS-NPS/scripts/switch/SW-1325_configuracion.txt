@@ -1,0 +1,179 @@
+! =====================================================================
+! SW-1325 (Cisco IOSvL2 15.2) - Practica AAA con RADIUS/NPS
+! Omar Paulino - 20251325
+! Se pega en la consola del switch en modo privilegiado.
+! =====================================================================
+enable
+configure terminal
+!
+! --- 1. Basico ---
+hostname SW-1325
+no ip domain-lookup
+ip domain-name omar1325.local
+service password-encryption
+service timestamps log datetime msec localtime show-timezone
+service timestamps debug datetime msec localtime show-timezone
+clock timezone AST -4 0
+no ip http server
+no ip http secure-server
+no cdp run
+spanning-tree mode rapid-pvst
+!
+! --- 2. VLAN y puertos ---
+vlan 13
+ name GESTION-1325
+vlan 999
+ name SIN-USO
+exit
+!
+interface GigabitEthernet0/0
+ description ENLACE-R1-1325-Gi0/0
+ switchport mode access
+ switchport access vlan 13
+ switchport nonegotiate
+ spanning-tree portfast edge
+ no shutdown
+exit
+!
+interface GigabitEthernet0/1
+ description SERVIDOR-NPS-OMAR1325
+ switchport mode access
+ switchport access vlan 13
+ switchport nonegotiate
+ switchport port-security
+ switchport port-security mac-address sticky
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+!
+interface range GigabitEthernet0/2 - 3, GigabitEthernet1/0 - 3
+ description SIN-USO
+ switchport mode access
+ switchport access vlan 999
+ shutdown
+exit
+!
+interface Vlan1
+ shutdown
+exit
+interface Vlan13
+ description GESTION-SW-1325
+ ip address 10.13.25.2 255.255.255.0
+ no shutdown
+exit
+ip default-gateway 10.13.25.1
+!
+! --- 3. Usuario local y seguridad del login ---
+enable secret Enable#1325
+username admin1325 privilege 15 secret Local#1325
+login block-for 120 attempts 3 within 60
+login delay 2
+login on-failure log
+login on-success log
+!
+banner motd ^
+*** ACCESO RESTRINGIDO - SW-1325 - Solo personal autorizado ***
+*** Practica AAA - Omar Paulino 20251325 ***
+^
+!
+! --- 4. AAA y cliente RADIUS ---
+aaa new-model
+radius server NPS-1325
+ address ipv4 10.13.25.10 auth-port 1812 acct-port 1813
+ key Radius#1325
+exit
+radius-server timeout 3
+radius-server retransmit 1
+ip radius source-interface Vlan13
+!
+aaa group server radius GRUPO-NPS
+ server name NPS-1325
+ ip radius source-interface Vlan13
+exit
+!
+! Autenticacion
+aaa authentication login default local
+aaa authentication login CONSOLA-AUX group GRUPO-NPS local
+aaa authentication login VTY-SSH group GRUPO-NPS local
+aaa authentication enable default enable
+!
+! Autorizacion
+aaa authorization console
+aaa authorization exec default local
+aaa authorization exec CONSOLA-AUX group GRUPO-NPS local
+aaa authorization exec VTY-SSH group GRUPO-NPS local
+!
+! Contabilidad
+aaa accounting exec default start-stop group GRUPO-NPS
+aaa session-id common
+!
+! --- 5. Niveles de privilegio 0, 5 y 10 ---
+privilege exec level 0 show privilege
+privilege exec level 5 show
+privilege exec level 5 show interfaces
+privilege exec level 5 show logging
+privilege exec level 5 show running-config
+privilege exec level 5 show version
+privilege exec level 5 show users
+privilege exec level 5 show ip
+privilege exec level 5 show ip interface
+privilege exec level 5 show ip interface brief
+privilege exec level 5 ping
+privilege exec level 5 traceroute
+privilege exec level 10 configure
+privilege exec level 10 configure terminal
+privilege configure level 10 interface
+privilege interface level 10 description
+privilege interface level 10 shutdown
+!
+! --- 6. SSH ---
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh logging events
+ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+!
+ip access-list standard SSH-GESTION
+ permit 10.13.25.0 0.0.0.255
+ deny   any log
+exit
+!
+line vty 0 15
+ access-class SSH-GESTION in
+ transport input ssh
+ transport output none
+ login authentication VTY-SSH
+ authorization exec VTY-SSH
+ exec-timeout 5 0
+ logging synchronous
+exit
+!
+! --- 7. Consola y puerto auxiliar ---
+line con 0
+ login authentication CONSOLA-AUX
+ authorization exec CONSOLA-AUX
+ exec-timeout 5 0
+ logging synchronous
+exit
+line aux 0
+ login authentication CONSOLA-AUX
+ authorization exec CONSOLA-AUX
+ exec-timeout 5 0
+exit
+!
+! --- 8. Logs ---
+logging userinfo
+logging buffered 64000 informational
+archive
+ log config
+  logging enable
+  logging size 200
+  notify syslog contenttype plaintext
+  hidekeys
+ exit
+exit
+!
+end
+write memory

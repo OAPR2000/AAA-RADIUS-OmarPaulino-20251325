@@ -1,0 +1,196 @@
+R1-1325#show running-config
+Building configuration...
+
+Current configuration : 3750 bytes
+!
+! Last configuration change at 21:32:38 AST Thu Oct 29 2026 by nivel10-1325
+!
+version 15.2
+service timestamps debug datetime msec localtime show-timezone
+service timestamps log datetime msec localtime show-timezone
+service password-encryption
+!
+hostname R1-1325
+!
+boot-start-marker
+boot-end-marker
+!
+!
+security passwords min-length 10
+logging userinfo
+logging buffered 64000 informational
+enable secret 5 $1$NQ2H$8SuoWuHHvJlaB.FN9R4i/1
+!
+aaa new-model
+!
+!
+aaa group server radius GRUPO-NPS
+ server 10.13.25.10 auth-port 1812 acct-port 1813
+ ip radius source-interface GigabitEthernet0/0
+!
+aaa authentication login default local
+aaa authentication login CONSOLA-AUX group GRUPO-NPS local
+aaa authentication login VTY-SSH group GRUPO-NPS local
+aaa authentication enable default enable
+aaa authorization console
+aaa authorization exec default local
+aaa authorization exec CONSOLA-AUX group GRUPO-NPS local
+aaa authorization exec VTY-SSH group GRUPO-NPS local
+aaa accounting exec default start-stop group GRUPO-NPS
+!
+!
+!
+!
+!
+aaa session-id common
+clock timezone AST -4 0
+no ip source-route
+no ip icmp rate-limit unreachable
+!
+!
+!
+!
+!
+!
+no ip domain lookup
+ip domain name omar1325.local
+ip cef
+login block-for 120 attempts 3 within 60
+login delay 2
+login on-failure log
+login on-success log
+no ipv6 cef
+!
+!
+multilink bundle-name authenticated
+!
+!
+archive
+ log config
+  logging enable
+  logging size 200
+  notify syslog contenttype plaintext
+  hidekeys
+!
+!
+!
+!
+!
+username admin1325 privilege 15 secret 5 $1$etVz$REHA0GrYwj4qaY0Hgl49m1
+!
+!
+!
+!
+!
+ip tcp synwait-time 5
+ip ssh time-out 60
+ip ssh logging events
+ip ssh version 2
+!
+!
+!
+!
+!
+!
+!
+!
+!
+interface Ethernet0/0
+ no ip address
+ shutdown
+ duplex auto
+!
+interface GigabitEthernet0/0
+ description ENLACE-SW-1325-Gi0/0
+ ip address 10.13.25.1 255.255.255.0
+ media-type gbic
+ speed 1000
+ duplex full
+ negotiation auto
+!
+interface GigabitEthernet1/0
+ no ip address
+ shutdown
+ negotiation auto
+!
+interface FastEthernet2/0
+ no ip address
+ shutdown
+ speed auto
+ duplex auto
+!
+interface FastEthernet2/1
+ no ip address
+ shutdown
+ speed auto
+ duplex auto
+!
+ip forward-protocol nd
+!
+!
+no ip http server
+no ip http secure-server
+!
+ip access-list standard SSH-GESTION
+ permit 10.13.25.0 0.0.0.255
+ deny   any log
+!
+!
+ip radius source-interface GigabitEthernet0/0
+!
+!
+radius-server host 10.13.25.10 auth-port 1812 acct-port 1813 key 7 0539070B28595D4A48564547
+radius-server retransmit 1
+radius-server timeout 3
+!
+!
+control-plane
+!
+privilege interface level 10 shutdown
+privilege interface level 10 description
+privilege configure level 10 interface
+privilege exec level 5 traceroute
+privilege exec level 5 ping
+privilege exec level 10 configure terminal
+privilege exec level 10 configure
+privilege exec level 5 show ip route
+privilege exec level 5 show ip interface brief
+privilege exec level 5 show ip interface
+privilege exec level 5 show ip
+privilege exec level 5 show users
+privilege exec level 5 show version
+privilege exec level 5 show running-config
+privilege exec level 5 show logging
+privilege exec level 0 show privilege
+privilege exec level 5 show interfaces
+privilege exec level 5 show
+banner motd ^C
+*** ACCESO RESTRINGIDO - R1-1325 - Solo personal autorizado ***
+*** Practica AAA - Omar Paulino 20251325 ***
+^C
+!
+line con 0
+ exec-timeout 5 0
+ privilege level 15
+ authorization exec CONSOLA-AUX
+ logging synchronous
+ login authentication CONSOLA-AUX
+ stopbits 1
+line aux 0
+ exec-timeout 5 0
+ privilege level 15
+ authorization exec CONSOLA-AUX
+ logging synchronous
+ login authentication CONSOLA-AUX
+ stopbits 1
+line vty 0 4
+ access-class SSH-GESTION in
+ exec-timeout 5 0
+ authorization exec VTY-SSH
+ logging synchronous
+ login authentication VTY-SSH
+ transport input ssh
+ transport output none
+!
+!
+end

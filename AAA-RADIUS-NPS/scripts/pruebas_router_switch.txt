@@ -1,0 +1,26 @@
+! =====================================================================
+! Comandos de verificacion usados en R1-1325 y SW-1325
+! =====================================================================
+! Prueba directa contra el NPS (modo privilegiado)
+test aaa group radius nivel0-1325 N0#Lab2025! legacy
+test aaa group radius nivel5-1325 N5#Lab2025! legacy
+test aaa group radius nivel10-1325 N10#Lab2025! legacy
+show aaa servers
+!
+! Niveles (despues de iniciar sesion con cada usuario)
+?
+show privilege
+ping 10.13.25.1
+configure terminal
+enable
+!
+! Lineas y SSH
+show line
+show line aux 0
+show running-config | section line
+show ssh
+show users
+!
+! Logs
+show logging
+show archive log config all

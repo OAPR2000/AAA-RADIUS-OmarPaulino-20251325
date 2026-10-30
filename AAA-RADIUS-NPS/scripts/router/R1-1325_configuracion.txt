@@ -1,0 +1,139 @@
+! =====================================================================
+! R1-1325 (Cisco 7206VXR - IOS 15.2(4)S6) - Practica AAA con RADIUS/NPS
+! Omar Paulino - 20251325
+! Se pega en la consola del router en modo privilegiado.
+! =====================================================================
+enable
+configure terminal
+!
+! --- 1. Basico ---
+hostname R1-1325
+no ip domain-lookup
+ip domain-name omar1325.local
+service password-encryption
+service timestamps log datetime msec localtime show-timezone
+service timestamps debug datetime msec localtime show-timezone
+clock timezone AST -4 0
+no ip source-route
+no ip http server
+no ip http secure-server
+!
+interface GigabitEthernet0/0
+ description ENLACE-SW-1325-Gi0/0
+ ip address 10.13.25.1 255.255.255.0
+ no shutdown
+exit
+!
+! --- 2. Usuario local y seguridad del login ---
+security passwords min-length 10
+enable secret Enable#1325
+username admin1325 privilege 15 secret Local#1325
+login block-for 120 attempts 3 within 60
+login delay 2
+login on-failure log
+login on-success log
+!
+banner motd ^
+*** ACCESO RESTRINGIDO - R1-1325 - Solo personal autorizado ***
+*** Practica AAA - Omar Paulino 20251325 ***
+^
+!
+! --- 3. AAA y cliente RADIUS ---
+aaa new-model
+radius-server host 10.13.25.10 auth-port 1812 acct-port 1813 key Radius#1325
+radius-server timeout 3
+radius-server retransmit 1
+ip radius source-interface GigabitEthernet0/0
+!
+aaa group server radius GRUPO-NPS
+ server 10.13.25.10 auth-port 1812 acct-port 1813
+ ip radius source-interface GigabitEthernet0/0
+exit
+!
+! Autenticacion
+aaa authentication login default local
+aaa authentication login CONSOLA-AUX group GRUPO-NPS local
+aaa authentication login VTY-SSH group GRUPO-NPS local
+aaa authentication enable default enable
+!
+! Autorizacion
+aaa authorization console
+aaa authorization exec default local
+aaa authorization exec CONSOLA-AUX group GRUPO-NPS local
+aaa authorization exec VTY-SSH group GRUPO-NPS local
+!
+! Contabilidad (inicio y fin de cada sesion hacia el NPS)
+aaa accounting exec default start-stop group GRUPO-NPS
+aaa session-id common
+!
+! --- 4. Niveles de privilegio 0, 5 y 10 ---
+privilege exec level 0 show privilege
+privilege exec level 5 show
+privilege exec level 5 show interfaces
+privilege exec level 5 show logging
+privilege exec level 5 show running-config
+privilege exec level 5 show version
+privilege exec level 5 show users
+privilege exec level 5 show ip
+privilege exec level 5 show ip interface
+privilege exec level 5 show ip interface brief
+privilege exec level 5 show ip route
+privilege exec level 5 ping
+privilege exec level 5 traceroute
+privilege exec level 10 configure
+privilege exec level 10 configure terminal
+privilege configure level 10 interface
+privilege interface level 10 description
+privilege interface level 10 shutdown
+!
+! --- 5. SSH ---
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh logging events
+!
+ip access-list standard SSH-GESTION
+ permit 10.13.25.0 0.0.0.255
+ deny   any log
+exit
+!
+line vty 0 4
+ access-class SSH-GESTION in
+ transport input ssh
+ transport output none
+ login authentication VTY-SSH
+ authorization exec VTY-SSH
+ exec-timeout 5 0
+ logging synchronous
+exit
+!
+! --- 6. Consola y puerto auxiliar ---
+line con 0
+ privilege level 15
+ login authentication CONSOLA-AUX
+ authorization exec CONSOLA-AUX
+ exec-timeout 5 0
+ logging synchronous
+exit
+line aux 0
+ privilege level 15
+ login authentication CONSOLA-AUX
+ authorization exec CONSOLA-AUX
+ exec-timeout 5 0
+ logging synchronous
+exit
+!
+! --- 7. Logs ---
+logging userinfo
+logging buffered 64000 informational
+archive
+ log config
+  logging enable
+  logging size 200
+  notify syslog contenttype plaintext
+  hidekeys
+ exit
+exit
+!
+end
+write memory
