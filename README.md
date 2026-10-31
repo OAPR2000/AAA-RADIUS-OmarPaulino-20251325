@@ -423,7 +423,7 @@ exit
 ip default-gateway 10.13.25.1
 ```
 
-Las VLAN se guardan en el archivo `vlan.dat` de la flash del switch y no en el running-config; por eso allí solo aparecen las asignaciones `switchport access vlan` y la interfaz `Vlan13`. Con `show vlan brief` se comprueba que las dos VLAN existen y que cada puerto está en la suya:
+Con `show vlan brief` se comprueba que las dos VLAN existen y que cada puerto está en la suya:
 
 ![show vlan brief](AAA-RADIUS-NPS/images/43_sw_show_vlan.png)
 
