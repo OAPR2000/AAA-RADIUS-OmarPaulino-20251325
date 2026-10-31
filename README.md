@@ -4,10 +4,7 @@
 
 ## Video de demostración
 
-[![Video de demostración](AAA-RADIUS-NPS/images/01_topologia_gns3.png)](ENLACE_DEL_VIDEO)
-
-**Enlace al video:** ENLACE_DEL_VIDEO
-
+https://youtu.be/2z4Pe2k1IAg?si=thpuDlXWzSZMULev
 ---
 
 ## Contenido
